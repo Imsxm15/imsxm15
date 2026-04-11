@@ -1,0 +1,137 @@
+# ============================================================
+# public-metrics.yml
+# Workflow GitHub Actions — Métriques publiques (profil README)
+# Utilise lowlighter/metrics pour générer des SVG non-sensibles
+# Ce workflow s'exécute dans le repo de PROFIL (username/username)
+# ============================================================
+
+name: "Public Profile Metrics"
+
+on:
+  schedule:
+    # Tous les jours à 03:00 UTC (avant le pipeline privé)
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+# Ce workflow doit vivre dans le repo de profil GitHub (username/username)
+# Il produit uniquement des métriques agrégées et anonymisées.
+
+permissions:
+  contents: write
+
+jobs:
+  metrics:
+    name: "Génération des métriques publiques"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────
+      - name: Checkout profile repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ──────────────────────────────────────────────────────────
+      # SVG 1 — Vue globale (overview)
+      # Affiche: stars, commits, PRs, issues, contributions
+      # NE PAS activer les options qui exposent les noms de repos privés
+      # ──────────────────────────────────────────────────────────
+      - name: Generate overview SVG
+        uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.GH_PAT }}
+          filename: metrics/overview.svg
+
+          # Identité
+          user: ${{ secrets.GH_USERNAME }}
+          template: classic
+          base: header, activity, community, repositories
+
+          # Plugins activés
+          plugin_languages: yes
+          plugin_languages_ignored: html, css, less, scss, dockerfile, makefile, shell
+          plugin_languages_limit: 8
+          plugin_languages_details: percentage
+
+          plugin_stargazers: yes
+          plugin_activity: yes
+          plugin_activity_limit: 5
+          plugin_activity_days: 14
+          plugin_activity_filter: push, issue, release
+
+          # SÉCURITÉ — ne pas exposer les repos privés
+          repositories_forks: no
+          repositories_affiliations: owner
+          config_display: columns
+
+          # Style
+          config_timezone: Europe/Paris
+          config_padding: 0, 8 + 11%
+
+      # ──────────────────────────────────────────────────────────
+      # SVG 2 — Calendrier de contributions (heatmap)
+      # ──────────────────────────────────────────────────────────
+      - name: Generate contribution calendar SVG
+        uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.GH_PAT }}
+          filename: metrics/calendar.svg
+
+          user: ${{ secrets.GH_USERNAME }}
+          template: classic
+          base: ""
+
+          # Plugin isocalendar = heatmap compact
+          plugin_isocalendar: yes
+          plugin_isocalendar_duration: full-year
+
+          config_timezone: Europe/Paris
+
+      # ──────────────────────────────────────────────────────────
+      # SVG 3 — Top langages (standalone)
+      # ──────────────────────────────────────────────────────────
+      - name: Generate languages SVG
+        uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.GH_PAT }}
+          filename: metrics/languages.svg
+
+          user: ${{ secrets.GH_USERNAME }}
+          template: classic
+          base: ""
+
+          plugin_languages: yes
+          plugin_languages_ignored: html, css, less, scss, dockerfile, makefile
+          plugin_languages_limit: 10
+          plugin_languages_details: percentage, bytes-size
+          plugin_languages_indepth: yes
+          plugin_languages_analysis_timeout: 15
+
+          repositories_forks: no
+          config_timezone: Europe/Paris
+
+      # ──────────────────────────────────────────────────────────
+      # Commit des SVGs générés
+      # ──────────────────────────────────────────────────────────
+      - name: Commit metrics SVGs
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-metrics-bot"
+          git add metrics/
+          if git diff --staged --quiet; then
+            echo "Aucun changement dans les métriques — commit ignoré"
+          else
+            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
+            git commit -m "chore(metrics): update public profile metrics — ${TIMESTAMP}"
+            git push
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 📈 Public Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "SVGs générés dans \`metrics/\`:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`overview.svg\` — Vue globale" >> $GITHUB_STEP_SUMMARY
+          echo "- \`calendar.svg\` — Calendrier de contributions" >> $GITHUB_STEP_SUMMARY
+          echo "- \`languages.svg\` — Répartition des langages" >> $GITHUB_STEP_SUMMARY
