@@ -48,7 +48,8 @@ I design and build AI systems end-to-end — agents, RAG pipelines, automation w
 
 ## GitHub stats
 
-<img width="1536" height="1024" alt="ChatGPT Image 12 avr  2026, 02_04_44" src="https://github.com/user-attachments/assets/d449e0dc-6ff4-49a3-90cb-d6f2aed3d2c3" />
+<img width="1024" height="1536" alt="Statistiques de développeur en progression" src="https://github.com/user-attachments/assets/e8b90fb2-0784-41a3-b9b5-13cb699416f1" />
+
 
 
 <div align="center">
