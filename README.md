@@ -1,6 +1,6 @@
 <div align="center">
 
-# Sam Huys
+# Samuel Huys
 
 **AI Engineer · Prompt Engineer · Builder of agents, automations & local-first tools**
 
